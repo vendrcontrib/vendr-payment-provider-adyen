@@ -98,17 +98,44 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
         public override CallbackResult ProcessCallback(OrderReadOnly order, HttpRequestBase request, AdyenCheckoutSettings settings)
         {
             // Check notification webhooks: https://docs.adyen.com/online-payments/pay-by-link#how-it-works
-
-            return new CallbackResult
+            try
             {
-                TransactionInfo = new TransactionInfo
+                var webhookSigningSecret = "";
+                var adyenEvent = GetWebhookAdyenEvent(request, webhookSigningSecret);
+                if (adyenEvent != null && adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
                 {
-                    AmountAuthorized = order.TransactionAmount.Value,
-                    TransactionFee = 0m,
-                    TransactionId = Guid.NewGuid().ToString("N"),
-                    PaymentStatus = PaymentStatus.Authorized
+                    //var hmacValidator = new Adyen.Util.HmacValidator();
+                    //var ecnrypted = hmacValidator.CalculateHmac(data, key);
+                    var amount = adyenEvent.Amount.Value ?? 0;
+
+                    var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
+                    var client = new Adyen.Client(settings.ApiKey, environment);
+
+                    var payment = new Adyen.Service.Payment(client);
+                    var result = payment.GetAuthenticationResult(new Adyen.Model.AuthenticationResultRequest
+                    {
+                        MerchantAccount = settings.MerchantAccount,
+                        PspReference = adyenEvent.PspReference
+                    });
+
+                    return CallbackResult.Ok(new TransactionInfo
+                    {
+                        TransactionId = "",
+                        AmountAuthorized = AmountFromMinorUnits(amount),
+                        PaymentStatus = PaymentStatus.Authorized //GetPaymentStatus(result)
+                    },
+                    new Dictionary<string, string>
+                    {
+                        { "adyenPspReference", adyenEvent.PspReference }
+                    });
                 }
-            };
+            }
+            catch (Exception ex)
+            {
+                Vendr.Log.Error<AdyenCheckoutPaymentProvider>(ex, "Adyen - ProcessCallback");
+            }
+
+            return CallbackResult.BadRequest();
         }
 
         public override ApiResult FetchPaymentStatus(OrderReadOnly order, AdyenCheckoutSettings settings)
@@ -164,7 +191,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     TransactionInfo = new TransactionInfoUpdate()
                     {
                         TransactionId = GetTransactionId(result),
-                        PaymentStatus = PaymentStatus.Cancelled
+                        PaymentStatus = GetPaymentStatus(result)
                     }
                 };
             }
@@ -204,7 +231,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     TransactionInfo = new TransactionInfoUpdate()
                     {
                         TransactionId = GetTransactionId(result),
-                        PaymentStatus = PaymentStatus.Captured
+                        PaymentStatus = GetPaymentStatus(result)
                     }
                 };
             }
@@ -244,7 +271,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     TransactionInfo = new TransactionInfoUpdate()
                     {
                         TransactionId = GetTransactionId(result),
-                        PaymentStatus = PaymentStatus.Refunded
+                        PaymentStatus = GetPaymentStatus(result)
                     }
                 };
             }
