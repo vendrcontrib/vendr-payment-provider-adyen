@@ -7,8 +7,8 @@
     <ProjectGuid>{54D75F3D-BD42-45E8-BC99-210A9AD71CEB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Vendr.Contrib.PaymentProviders.Template</RootNamespace>
-    <AssemblyName>Vendr.Contrib.PaymentProviders.Template</AssemblyName>
+    <RootNamespace>Vendr.Contrib.PaymentProviders.Adyen</RootNamespace>
+    <AssemblyName>Vendr.Contrib.PaymentProviders.Adyen</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -85,8 +85,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\VersionInfo.cs" />
-    <Compile Include="TemplatePaymentProvider.cs" />
-    <Compile Include="TemplateSettings.cs" />
+    <Compile Include="AdyenPaymentProvider.cs" />
+    <Compile Include="AdyenSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
