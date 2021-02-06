@@ -73,7 +73,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 paymentRequest.AllowedPaymentMethods = paymentMethods;
             }
 
-            var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Live : Adyen.Model.Enum.Environment.Test;
+            var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
 
             // Create the http client
             var client = new Adyen.Client(settings.ApiKey, environment);
