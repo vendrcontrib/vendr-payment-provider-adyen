@@ -5,6 +5,8 @@ using Vendr.Core.Web.PaymentProviders;
 
 namespace Vendr.Contrib.PaymentProviders.Adyen
 {
+    using Adyen = global::Adyen;
+
     public abstract class AdyenPaymentProviderBase<TSettings> : PaymentProviderBase<TSettings>
         where TSettings : AdyenSettingsBase, new()
     {
@@ -34,6 +36,11 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             settings.ErrorUrl.MustNotBeNull("settings.ErrorUrl");
 
             return settings.ErrorUrl;
+        }
+
+        protected string GetTransactionId(Adyen.Model.Modification.ModificationResult result)
+        {
+            return result.PspReference;
         }
     }
 }
