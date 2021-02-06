@@ -3,7 +3,7 @@
     
     <info>
         <package>
-            <name>Vendr.Contrib.PaymentProviders.Template</name>
+            <name>Vendr.Contrib.PaymentProviders.Adyen</name>
             <version>0.0.0</version>
             <license url="https://opensource.org/licenses/MIT">MIT</license>
             <url></url>
@@ -18,7 +18,7 @@
             <name></name>
             <website></website>
         </author>
-        <readme>Template payment provider for Vendr, the eCommerce package for Umbrao v8+</readme>
+        <readme>Adyen payment provider for Vendr, the eCommerce package for Umbrao v8+</readme>
     </info>
     
     <DocumentTypes></DocumentTypes>
