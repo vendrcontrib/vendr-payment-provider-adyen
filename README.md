@@ -1,3 +1,3 @@
-# Vendr Template Payment Provider
+# Vendr Adyen Payment Provider
 
-Template Payment Provider for Vendr, the eCommerce package for Umbrao v8+
+Adyen Payment Provider for Vendr, the eCommerce package for Umbrao v8+
