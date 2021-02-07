@@ -67,7 +67,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     reference: order.OrderNumber
                 )
             {
-                ReturnUrl = continueUrl,
+                ReturnUrl = callbackUrl, //continueUrl,
                 //MerchantOrderReference = order.GetOrderReference(),
                 ShopperEmail = order.CustomerInfo.Email,
                 ShopperReference = order.CustomerInfo.CustomerReference,
