@@ -42,7 +42,34 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             return settings.ErrorUrl;
         }
 
-        protected Adyen.Model.Notification.NotificationRequestItem GetWebhookAdyenEvent(HttpRequestBase request, string webhookSigningSecret)
+        public override OrderReference GetOrderReference(HttpRequestBase request, TSettings settings)
+        {
+            var environment = GetEnvironment(settings);
+
+            var adyenEvent = GetWebhookAdyenEvent(request, settings);
+            if (adyenEvent != null)
+            {
+                try
+                {
+                    var metadata = adyenEvent.AdditionalData;
+                    if (metadata != null)
+                    {
+                        if (metadata.TryGetValue("orderReference", out string orderReference))
+                        {
+                            return OrderReference.Parse(orderReference);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Vendr.Log.Error<AdyenCheckoutPaymentProvider>(ex, "Adyen - GetOrderReference");
+                }
+            }
+
+            return base.GetOrderReference(request, settings);
+        }
+
+        protected Adyen.Model.Notification.NotificationRequestItem GetWebhookAdyenEvent(HttpRequestBase request, AdyenSettingsBase settings)
         {
             Adyen.Model.Notification.NotificationRequestItem adyenEvent = null;
 
@@ -62,7 +89,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         var json = reader.ReadToEnd();
 
                         //var handler = new Adyen.Notification.NotificationHandler();
-                        //notification = handler.HandleNotificationRequest(json);
+                        //var notification = handler.HandleNotificationRequest(json);
 
                         //Adyen.Model.Notification.NotificationRequestItem
                         //var hmacValidator = new Adyen.Util.HmacValidator();
@@ -79,6 +106,13 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             }
 
             return adyenEvent;
+        }
+
+        protected Adyen.Model.Enum.Environment GetEnvironment(AdyenSettingsBase settings)
+        {
+            return settings.TestMode 
+                ? Adyen.Model.Enum.Environment.Test 
+                : Adyen.Model.Enum.Environment.Live;
         }
 
         protected string GetTransactionId(Adyen.Model.Modification.ModificationResult result)
