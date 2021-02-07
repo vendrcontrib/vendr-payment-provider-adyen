@@ -25,7 +25,8 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
         public override bool CanRefundPayments => true;
         public override bool CanFetchPaymentStatus => true;
 
-        public override bool FinalizeAtContinueUrl => true;
+        // We'll finalize via webhook callback
+        public override bool FinalizeAtContinueUrl => false;
 
         public override IEnumerable<TransactionMetaDataDefinition> TransactionMetaDataDefinitions => new[]{
             new TransactionMetaDataDefinition("adyenPspReference", "Adyen PSP reference")
