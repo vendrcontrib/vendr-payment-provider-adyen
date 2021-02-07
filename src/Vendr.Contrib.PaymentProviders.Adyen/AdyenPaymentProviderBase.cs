@@ -44,17 +44,15 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
         public override OrderReference GetOrderReference(HttpRequestBase request, TSettings settings)
         {
-            var environment = GetEnvironment(settings);
-
             var adyenEvent = GetWebhookAdyenEvent(request, settings);
             if (adyenEvent != null)
             {
                 try
                 {
-                    var metadata = adyenEvent.AdditionalData;
-                    if (metadata != null)
+                    var additionalData = adyenEvent.AdditionalData;
+                    if (additionalData != null)
                     {
-                        if (metadata.TryGetValue("orderReference", out string orderReference))
+                        if (additionalData.TryGetValue("metadata.orderReference", out string orderReference))
                         {
                             return OrderReference.Parse(orderReference);
                         }
@@ -90,15 +88,31 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     {
                         var json = reader.ReadToEnd();
 
-                        //var handler = new Adyen.Notification.NotificationHandler();
-                        //var notification = handler.HandleNotificationRequest(json);
+                        var handler = new Adyen.Notification.NotificationHandler();
+                        var notification = handler.HandleNotificationRequest(json);
+
+                        // TODO: Check enviroment match notification.Live ("false" or "true")
+                        // Verify "hmacSignature" in AdditionalData property
+                        // Verify "orderReference" in "metadata.orderReference"
 
                         //Adyen.Model.Notification.NotificationRequestItem
                         //var hmacValidator = new Adyen.Util.HmacValidator();
-                        //var ecnrypted = hmacValidator.CalculateHmac(data, key);
+                        //var encrypted = hmacValidator.CalculateHmac(data, key);
 
+                        bool? liveMode = notification.Live.TryParse<bool>();
 
-                        HttpContext.Current.Items["Vendr_AdyenEvent"] = adyenEvent;
+                        // Check live mode from notification is opposite of test mode setting.
+                        if (liveMode.HasValue && liveMode.Value != settings.TestMode)
+                        {
+                            var item = notification.NotificationItemContainers[0].NotificationItem;
+
+                            //var hmacValidator = new Adyen.Util.HmacValidator();
+                            //var encrypted = hmacValidator.CalculateHmac(data, key);
+
+                            adyenEvent = item;
+
+                            HttpContext.Current.Items["Vendr_AdyenEvent"] = adyenEvent;
+                        }
                     }
                 }
                 catch (Exception ex)
