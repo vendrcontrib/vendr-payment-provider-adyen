@@ -77,7 +77,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 paymentRequest.AllowedPaymentMethods = paymentMethods;
             }
 
-            var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
+            var environment = GetEnvironment(settings);
 
             // Create the http client
             var client = new Adyen.Client(settings.ApiKey, environment);
@@ -100,8 +100,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             // Check notification webhooks: https://docs.adyen.com/online-payments/pay-by-link#how-it-works
             try
             {
-                var webhookSigningSecret = "";
-                var adyenEvent = GetWebhookAdyenEvent(request, webhookSigningSecret);
+                var adyenEvent = GetWebhookAdyenEvent(request, settings);
                 if (adyenEvent != null && adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
                 {
                     //var hmacValidator = new Adyen.Util.HmacValidator();
