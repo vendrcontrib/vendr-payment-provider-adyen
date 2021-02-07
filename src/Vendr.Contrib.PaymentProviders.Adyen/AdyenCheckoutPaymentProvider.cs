@@ -111,7 +111,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 if (adyenEvent != null && adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
                 {
                     //var hmacValidator = new Adyen.Util.HmacValidator();
-                    //var ecnrypted = hmacValidator.CalculateHmac(data, key);
+                    //var encrypted = hmacValidator.CalculateHmac(data, key);
                     var amount = adyenEvent.Amount.Value ?? 0;
 
                     var environment = GetEnvironment(settings);
