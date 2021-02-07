@@ -114,7 +114,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     //var ecnrypted = hmacValidator.CalculateHmac(data, key);
                     var amount = adyenEvent.Amount.Value ?? 0;
 
-                    var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
+                    var environment = GetEnvironment(settings);
                     var client = new Adyen.Client(settings.ApiKey, environment);
 
                     var payment = new Adyen.Service.Payment(client);
@@ -148,7 +148,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
         {
             try
             {
-                var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
+                var environment = GetEnvironment(settings);
                 var client = new Adyen.Client(settings.ApiKey, environment);
 
                 var payment = new Adyen.Service.Payment(client);
@@ -181,7 +181,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             try
             {
-                var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
+                var environment = GetEnvironment(settings);
                 var client = new Adyen.Client(settings.ApiKey, environment);
 
                 var modification = new Adyen.Service.Modification(client);
@@ -220,7 +220,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             try
             {
-                var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
+                var environment = GetEnvironment(settings);
                 var client = new Adyen.Client(settings.ApiKey, environment);
 
                 var modification = new Adyen.Service.Modification(client);
@@ -260,7 +260,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             try
             {
-                var environment = settings.TestMode ? Adyen.Model.Enum.Environment.Test : Adyen.Model.Enum.Environment.Live;
+                var environment = GetEnvironment(settings);
                 var client = new Adyen.Client(settings.ApiKey, environment);
 
                 var modification = new Adyen.Service.Modification(client);
