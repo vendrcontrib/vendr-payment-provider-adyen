@@ -71,6 +71,8 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
         protected Adyen.Model.Notification.NotificationRequestItem GetWebhookAdyenEvent(HttpRequestBase request, AdyenSettingsBase settings)
         {
+            var environment = GetEnvironment(settings);
+
             Adyen.Model.Notification.NotificationRequestItem adyenEvent = null;
 
             if (HttpContext.Current.Items["Vendr_AdyenEvent"] != null)
