@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using Vendr.Core;
 using Vendr.Core.Models;
+using Vendr.Core.Web;
 using Vendr.Core.Web.Api;
 using Vendr.Core.Web.PaymentProviders;
 
@@ -48,9 +49,11 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                    .Select(s => s.Trim())
                    .ToList();
 
+            var orderReference = order.GenerateOrderReference();
+
             var metadata = new Dictionary<string, string>
             {
-                //{ "orderReference", "" }
+                { "orderReference", orderReference }
             };
 
             // Create a payment request
