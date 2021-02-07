@@ -59,9 +59,12 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             // Create a payment request
             var amount = new Adyen.Model.Checkout.Amount(currencyCode, orderAmount);
             var paymentRequest = new Adyen.Model.Checkout.CreatePaymentLinkRequest
-                (amount: amount,
-                merchantAccount: settings.MerchantAccount,
-                reference: order.OrderNumber)
+                (
+                    // Currently these are required in ctor
+                    amount: amount,
+                    merchantAccount: settings.MerchantAccount,
+                    reference: order.OrderNumber
+                )
             {
                 ReturnUrl = settings.ContinueUrl,
                 //MerchantOrderReference = order.GetOrderReference(),
