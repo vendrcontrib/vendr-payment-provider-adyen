@@ -75,7 +75,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 Metadata = metadata
             };
 
-            if (paymentMethods.Count > 0)
+            if (paymentMethods?.Count > 0)
             {
                 paymentRequest.AllowedPaymentMethods = paymentMethods;
             }
