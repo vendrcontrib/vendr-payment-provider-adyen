@@ -29,7 +29,8 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
         public override bool FinalizeAtContinueUrl => false;
 
         public override IEnumerable<TransactionMetaDataDefinition> TransactionMetaDataDefinitions => new[]{
-            new TransactionMetaDataDefinition("adyenPspReference", "Adyen PSP reference")
+            new TransactionMetaDataDefinition("adyenPspReference", "Adyen PSP reference"),
+            new TransactionMetaDataDefinition("adyenPaymentMethod", "Adyen Payment Method")
         };
 
         public override PaymentFormResult GenerateForm(OrderReadOnly order, string continueUrl, string cancelUrl, string callbackUrl, AdyenCheckoutSettings settings)
@@ -72,7 +73,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     )
                 {
                     ReturnUrl = callbackUrl, //continueUrl,
-                                             //MerchantOrderReference = order.GetOrderReference(),
+                    //MerchantOrderReference = order.GetOrderReference(),
                     ShopperEmail = order.CustomerInfo.Email,
                     ShopperReference = order.CustomerInfo.CustomerReference,
                     ShopperName = new Adyen.Model.Checkout.Name
@@ -132,6 +133,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 {
                     //var hmacValidator = new Adyen.Util.HmacValidator();
                     //var encrypted = hmacValidator.CalculateHmac(data, key);
+
                     var amount = adyenEvent.Amount.Value ?? 0;
 
                     var environment = GetEnvironment(settings);
@@ -145,16 +147,18 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     });
 
                     // PspReference = Unique identifier for the payment
+                    var pspReference = adyenEvent.PspReference;
 
                     return CallbackResult.Ok(new TransactionInfo
                     {
-                        TransactionId = adyenEvent.PspReference,
+                        TransactionId = pspReference,
                         AmountAuthorized = AmountFromMinorUnits(amount),
                         PaymentStatus = PaymentStatus.Authorized //GetPaymentStatus(result)
                     },
                     new Dictionary<string, string>
                     {
-                        { "adyenPspReference", adyenEvent.PspReference }
+                        { "adyenPspReference", pspReference },
+                        { "adyenPaymentMethod", adyenEvent.PaymentMethod }
                     });
                 }
             }
@@ -179,7 +183,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 var result = modification.Cancel(new Adyen.Model.Modification.CancelRequest
                 {
                     MerchantAccount = settings.MerchantAccount,
-                    OriginalReference = order.TransactionInfo.TransactionId //order.Properties["adyenPspReference"]
+                    OriginalReference = order.TransactionInfo.TransactionId
                     //Reference = "" (optional)
                 });
 
@@ -219,7 +223,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 {
                     MerchantAccount = settings.MerchantAccount,
                     ModificationAmount = new Adyen.Model.Amount(currencyCode, orderAmount),
-                    OriginalReference = order.TransactionInfo.TransactionId //order.Properties["adyenPspReference"]
+                    OriginalReference = order.TransactionInfo.TransactionId
                     //Reference = "" (optional)
                 });
 
@@ -259,7 +263,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 {
                     MerchantAccount = settings.MerchantAccount,
                     ModificationAmount = new Adyen.Model.Amount(currencyCode, orderAmount),
-                    OriginalReference = order.TransactionInfo.TransactionId //order.Properties["adyenPspReference"]
+                    OriginalReference = order.TransactionInfo.TransactionId
                     //Reference = "" (optional)
                 });
 
