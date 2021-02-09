@@ -62,13 +62,15 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             try
             {
+                var config = GetConfig(settings);
+
                 // Create a payment request
                 var amount = new Adyen.Model.Checkout.Amount(currencyCode, orderAmount);
                 var paymentRequest = new Adyen.Model.Checkout.CreatePaymentLinkRequest
                     (
                         // Currently these are required in ctor
                         amount: amount,
-                        merchantAccount: settings.MerchantAccount,
+                        merchantAccount: config.MerchantAccount,
                         reference: order.OrderNumber
                     )
                 {
@@ -89,10 +91,8 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     paymentRequest.AllowedPaymentMethods = paymentMethods;
                 }
 
-                var environment = GetEnvironment(settings);
-
                 // Create the http client
-                var client = new Adyen.Client(settings.ApiKey, environment);
+                var client = new Adyen.Client(config);
                 var checkout = new Adyen.Service.Checkout(client);
 
                 result = checkout.PaymentLinks(paymentRequest);
@@ -136,13 +136,13 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
                     var amount = adyenEvent.Amount.Value ?? 0;
 
-                    var environment = GetEnvironment(settings);
-                    var client = new Adyen.Client(settings.ApiKey, environment);
+                    var config = GetConfig(settings);
+                    var client = new Adyen.Client(config);
 
                     var payment = new Adyen.Service.Payment(client);
                     var result = payment.GetAuthenticationResult(new Adyen.Model.AuthenticationResultRequest
                     {
-                        MerchantAccount = settings.MerchantAccount,
+                        MerchantAccount = config.MerchantAccount,
                         PspReference = adyenEvent.PspReference
                     });
 
@@ -176,13 +176,13 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             try
             {
-                var environment = GetEnvironment(settings);
-                var client = new Adyen.Client(settings.ApiKey, environment);
+                var config = GetConfig(settings);
+                var client = new Adyen.Client(config);
 
                 var modification = new Adyen.Service.Modification(client);
                 var result = modification.Cancel(new Adyen.Model.Modification.CancelRequest
                 {
-                    MerchantAccount = settings.MerchantAccount,
+                    MerchantAccount = config.MerchantAccount,
                     OriginalReference = order.TransactionInfo.TransactionId
                     //Reference = "" (optional)
                 });
@@ -221,13 +221,13 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             try
             {
-                var environment = GetEnvironment(settings);
-                var client = new Adyen.Client(settings.ApiKey, environment);
+                var config = GetConfig(settings);
+                var client = new Adyen.Client(config);
 
                 var modification = new Adyen.Service.Modification(client);
                 var result = modification.Capture(new Adyen.Model.Modification.CaptureRequest
                 {
-                    MerchantAccount = settings.MerchantAccount,
+                    MerchantAccount = config.MerchantAccount,
                     ModificationAmount = new Adyen.Model.Amount(currencyCode, orderAmount),
                     OriginalReference = order.TransactionInfo.TransactionId
                     //Reference = "" (optional)
@@ -261,13 +261,13 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             try
             {
-                var environment = GetEnvironment(settings);
-                var client = new Adyen.Client(settings.ApiKey, environment);
+                var config = GetConfig(settings);
+                var client = new Adyen.Client(config);
 
                 var modification = new Adyen.Service.Modification(client);
                 var result = modification.Refund(new Adyen.Model.Modification.RefundRequest
                 {
-                    MerchantAccount = settings.MerchantAccount,
+                    MerchantAccount = config.MerchantAccount,
                     ModificationAmount = new Adyen.Model.Amount(currencyCode, orderAmount),
                     OriginalReference = order.TransactionInfo.TransactionId
                     //Reference = "" (optional)
