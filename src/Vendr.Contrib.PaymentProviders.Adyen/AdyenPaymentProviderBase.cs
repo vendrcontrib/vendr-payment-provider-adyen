@@ -69,7 +69,6 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
         protected Adyen.Model.Notification.NotificationRequestItem GetWebhookAdyenEvent(HttpRequestBase request, AdyenSettingsBase settings)
         {
-            var environment = GetEnvironment(settings);
             string hmacKey = "";
 
             Adyen.Model.Notification.NotificationRequestItem adyenEvent = null;
@@ -131,11 +130,18 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             return adyenEvent;
         }
 
-        protected Adyen.Model.Enum.Environment GetEnvironment(AdyenSettingsBase settings)
+        protected Adyen.Config GetConfig(AdyenSettingsBase settings)
         {
-            return settings.TestMode 
-                ? Adyen.Model.Enum.Environment.Test 
-                : Adyen.Model.Enum.Environment.Live;
+            var config = new Adyen.Config
+            {
+                MerchantAccount = settings.MerchantAccount,
+                XApiKey = settings.ApiKey,
+                Environment = settings.TestMode 
+                    ? Adyen.Model.Enum.Environment.Test
+                    : Adyen.Model.Enum.Environment.Live
+            };
+
+            return config;
         }
 
         protected string GetTransactionId(Adyen.Model.Modification.ModificationResult result)
