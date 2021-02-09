@@ -57,40 +57,55 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 { "orderReference", orderReference }
             };
 
-            // Create a payment request
-            var amount = new Adyen.Model.Checkout.Amount(currencyCode, orderAmount);
-            var paymentRequest = new Adyen.Model.Checkout.CreatePaymentLinkRequest
-                (
-                    // Currently these are required in ctor
-                    amount: amount,
-                    merchantAccount: settings.MerchantAccount,
-                    reference: order.OrderNumber
-                )
-            {
-                ReturnUrl = callbackUrl, //continueUrl,
-                //MerchantOrderReference = order.GetOrderReference(),
-                ShopperEmail = order.CustomerInfo.Email,
-                ShopperReference = order.CustomerInfo.CustomerReference,
-                ShopperName = new Adyen.Model.Checkout.Name
-                (
-                    firstName: order.CustomerInfo.FirstName,
-                    lastName: order.CustomerInfo.LastName
-                ),
-                Metadata = metadata
-            };
+            Adyen.Model.Checkout.PaymentLinkResource result = null;
 
-            if (paymentMethods?.Count > 0)
+            try
             {
-                paymentRequest.AllowedPaymentMethods = paymentMethods;
+                // Create a payment request
+                var amount = new Adyen.Model.Checkout.Amount(currencyCode, orderAmount);
+                var paymentRequest = new Adyen.Model.Checkout.CreatePaymentLinkRequest
+                    (
+                        // Currently these are required in ctor
+                        amount: amount,
+                        merchantAccount: settings.MerchantAccount,
+                        reference: order.OrderNumber
+                    )
+                {
+                    ReturnUrl = callbackUrl, //continueUrl,
+                                             //MerchantOrderReference = order.GetOrderReference(),
+                    ShopperEmail = order.CustomerInfo.Email,
+                    ShopperReference = order.CustomerInfo.CustomerReference,
+                    ShopperName = new Adyen.Model.Checkout.Name
+                    (
+                        firstName: order.CustomerInfo.FirstName,
+                        lastName: order.CustomerInfo.LastName
+                    ),
+                    Metadata = metadata
+                };
+
+                if (paymentMethods?.Count > 0)
+                {
+                    paymentRequest.AllowedPaymentMethods = paymentMethods;
+                }
+
+                var environment = GetEnvironment(settings);
+
+                // Create the http client
+                var client = new Adyen.Client(settings.ApiKey, environment);
+                var checkout = new Adyen.Service.Checkout(client);
+
+                result = checkout.PaymentLinks(paymentRequest);
             }
-
-            var environment = GetEnvironment(settings);
-
-            // Create the http client
-            var client = new Adyen.Client(settings.ApiKey, environment);
-            var checkout = new Adyen.Service.Checkout(client);
-
-            var result = checkout.PaymentLinks(paymentRequest);
+            catch (Adyen.HttpClient.HttpClientException ex)
+            {
+                Vendr.Log.Error<AdyenCheckoutPaymentProvider>(ex, $"Request for payment failed::\n{ex.ResponseBody}\n");
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                Vendr.Log.Error<AdyenCheckoutPaymentProvider>(ex, $"Request for payment failed::\n{ex.Message}\n");
+                throw ex;
+            }
 
             return new PaymentFormResult()
             {
@@ -107,8 +122,13 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             // Check notification webhooks: https://docs.adyen.com/online-payments/pay-by-link#how-it-works
             try
             {
+                // Match "additionalData.paymentLinkId" with payment link
+                // https://docs.adyen.com/online-payments/pay-by-link?tab=api__2
+
                 var adyenEvent = GetWebhookAdyenEvent(request, settings);
-                if (adyenEvent != null && adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
+                if (adyenEvent != null && 
+                    adyenEvent.Success == true &&
+                    adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
                 {
                     //var hmacValidator = new Adyen.Util.HmacValidator();
                     //var encrypted = hmacValidator.CalculateHmac(data, key);
@@ -124,9 +144,11 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         PspReference = adyenEvent.PspReference
                     });
 
+                    // PspReference = Unique identifier for the payment
+
                     return CallbackResult.Ok(new TransactionInfo
                     {
-                        TransactionId = "",
+                        TransactionId = adyenEvent.PspReference,
                         AmountAuthorized = AmountFromMinorUnits(amount),
                         PaymentStatus = PaymentStatus.Authorized //GetPaymentStatus(result)
                     },
@@ -152,6 +174,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 var client = new Adyen.Client(settings.ApiKey, environment);
 
                 var payment = new Adyen.Service.Payment(client);
+
                 var result = payment.GetAuthenticationResult(new Adyen.Model.AuthenticationResultRequest
                 {
                     MerchantAccount = settings.MerchantAccount,
@@ -188,7 +211,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 var result = modification.Cancel(new Adyen.Model.Modification.CancelRequest
                 {
                     MerchantAccount = settings.MerchantAccount,
-                    OriginalReference = order.Properties["adyenPspReference"]
+                    OriginalReference = order.TransactionInfo.TransactionId //order.Properties["adyenPspReference"]
                     //Reference = "" (optional)
                 });
 
@@ -228,7 +251,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 {
                     MerchantAccount = settings.MerchantAccount,
                     ModificationAmount = new Adyen.Model.Amount(currencyCode, orderAmount),
-                    OriginalReference = order.Properties["adyenPspReference"]
+                    OriginalReference = order.TransactionInfo.TransactionId //order.Properties["adyenPspReference"]
                     //Reference = "" (optional)
                 });
 
@@ -268,7 +291,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 {
                     MerchantAccount = settings.MerchantAccount,
                     ModificationAmount = new Adyen.Model.Amount(currencyCode, orderAmount),
-                    OriginalReference = order.Properties["adyenPspReference"]
+                    OriginalReference = order.TransactionInfo.TransactionId //order.Properties["adyenPspReference"]
                     //Reference = "" (optional)
                 });
 
