@@ -23,7 +23,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
         public override bool CanCancelPayments => true;
         public override bool CanCapturePayments => true;
         public override bool CanRefundPayments => true;
-        public override bool CanFetchPaymentStatus => true;
+        public override bool CanFetchPaymentStatus => false;
 
         // We'll finalize via webhook callback
         public override bool FinalizeAtContinueUrl => false;
@@ -164,38 +164,6 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             }
 
             return CallbackResult.BadRequest();
-        }
-
-        public override ApiResult FetchPaymentStatus(OrderReadOnly order, AdyenCheckoutSettings settings)
-        {
-            try
-            {
-                var environment = GetEnvironment(settings);
-                var client = new Adyen.Client(settings.ApiKey, environment);
-
-                var payment = new Adyen.Service.Payment(client);
-
-                var result = payment.GetAuthenticationResult(new Adyen.Model.AuthenticationResultRequest
-                {
-                    MerchantAccount = settings.MerchantAccount,
-                    PspReference = order.Properties["adyenPspReference"]
-                });
-
-                return new ApiResult()
-                {
-                    TransactionInfo = new TransactionInfoUpdate()
-                    {
-                        TransactionId = "", //GetTransactionId(result),
-                        PaymentStatus = PaymentStatus.Authorized
-                    }
-                };
-            }
-            catch (Exception ex)
-            {
-                Vendr.Log.Error<AdyenCheckoutPaymentProvider>(ex, "Adyen - FetchPaymentStatus");
-            }
-
-            return ApiResult.Empty;
         }
 
         public override ApiResult CancelPayment(OrderReadOnly order, AdyenCheckoutSettings settings)
