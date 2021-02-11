@@ -29,6 +29,21 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             SortOrder = 500)]
         public string ApiKey { get; set; }
 
+        [PaymentProviderSetting(Name = "HMAC Key",
+            Description = "HMAC Key (HEX Encoded) for the notification.",
+            SortOrder = 500)]
+        public string HmacKey  { get; set; }
+
+        [PaymentProviderSetting(Name = "Notification Username",
+            Description = "User name for the notification.",
+            SortOrder = 600)]
+        public string NotificationUsername { get; set; }
+
+        [PaymentProviderSetting(Name = "Notification Password",
+            Description = "Password for the notification.",
+            SortOrder = 700)]
+        public string NotificationPassword { get; set; }
+
         [PaymentProviderSetting(Name = "Test Mode",
             Description = "Set whether to process payments in test mode.",
             SortOrder = 10000)]
