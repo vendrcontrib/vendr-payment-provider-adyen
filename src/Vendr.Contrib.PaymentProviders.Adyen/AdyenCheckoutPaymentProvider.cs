@@ -51,11 +51,11 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                    .Select(s => s.Trim())
                    .ToList();
 
-            var orderReference = order.GenerateOrderReference();
-
             var metadata = new Dictionary<string, string>
             {
-                { "orderReference", orderReference }
+                { "orderReference", order.GenerateOrderReference() },
+                { "orderId", order.Id.ToString("D") },
+                { "orderNumber", order.OrderNumber }
             };
 
             Adyen.Model.Checkout.PaymentLinkResource result = null;
