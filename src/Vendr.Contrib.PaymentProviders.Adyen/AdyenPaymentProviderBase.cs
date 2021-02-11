@@ -52,7 +52,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     var additionalData = adyenEvent.AdditionalData;
                     if (additionalData != null)
                     {
-                        if (additionalData.TryGetValue("metadata.orderReference", out string orderReference))
+                        if (additionalData.TryGetValue(Constants.AdditionalData.OrderReference, out string orderReference))
                         {
                             return OrderReference.Parse(orderReference);
                         }
@@ -140,6 +140,10 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     ? Adyen.Model.Enum.Environment.Test
                     : Adyen.Model.Enum.Environment.Live
             };
+
+            // When using the overload method with config, it doesn't set environment, 
+            // because it is possible to override, so we set the environment after to configurate the endpoints etc.
+            // https://github.com/Adyen/adyen-dotnet-api-library/blob/master/Adyen/Client.cs
 
             var client = new Adyen.Client(config);
             client.SetEnvironment(config.Environment);

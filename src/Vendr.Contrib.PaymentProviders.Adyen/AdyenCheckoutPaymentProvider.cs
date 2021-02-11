@@ -129,33 +129,38 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 var adyenEvent = GetWebhookAdyenEvent(request, settings);
                 if (adyenEvent != null && 
                     adyenEvent.Success == true &&
-                    adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
+                    (
+                        adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation ||
+                        adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture
+                    ))
                 {
                     var amount = adyenEvent.Amount.Value ?? 0;
 
-                    var client = GetClient(settings);
-
-                    var payment = new Adyen.Service.Payment(client);
-                    var result = payment.GetAuthenticationResult(new Adyen.Model.AuthenticationResultRequest
-                    {
-                        MerchantAccount = client.Config.MerchantAccount,
-                        PspReference = adyenEvent.PspReference
-                    });
+                    var paymentStatus = adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture
+                        ? PaymentStatus.Captured
+                        : PaymentStatus.Authorized;
 
                     // PspReference = Unique identifier for the payment
                     var pspReference = adyenEvent.PspReference;
+
+                    var metaData = new Dictionary<string, string>
+                    {
+                        { "adyenPspReference", pspReference },
+                        { "adyenPaymentMethod", adyenEvent.PaymentMethod }
+                    };
+
+                    if (adyenEvent.AdditionalData.TryGetValue(Constants.AdditionalData.PaymentLinkId, out string paymentLinkId))
+                    {
+                        metaData.Add("adyenPaymentLinkId", paymentLinkId);
+                    }
 
                     return CallbackResult.Ok(new TransactionInfo
                     {
                         TransactionId = pspReference,
                         AmountAuthorized = AmountFromMinorUnits(amount),
-                        PaymentStatus = PaymentStatus.Authorized //GetPaymentStatus(result)
+                        PaymentStatus = paymentStatus
                     },
-                    new Dictionary<string, string>
-                    {
-                        { "adyenPspReference", pspReference },
-                        { "adyenPaymentMethod", adyenEvent.PaymentMethod }
-                    });
+                    metaData);
                 }
             }
             catch (Exception ex)
