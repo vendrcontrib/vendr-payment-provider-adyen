@@ -91,11 +91,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         var handler = new Adyen.Notification.NotificationHandler();
                         var notification = handler.HandleNotificationRequest(json);
 
-                        // TODO: Check enviroment match notification.Live ("false" or "true")
-                        // Verify "hmacSignature" in AdditionalData property
-
                         var hmacValidator = new Adyen.Util.HmacValidator();
-                        //var encrypted = hmacValidator.CalculateHmac(data, key);
 
                         bool? liveMode = notification.Live.TryParse<bool>();
 
@@ -104,6 +100,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         {
                             var notificationItem = notification.NotificationItemContainers[0].NotificationItem;
 
+                            // Verify "hmacSignature" in AdditionalData property
                             if (hmacValidator.IsValidHmac(notificationItem, hmacKey))
                             {
                                 string eventCode = notificationItem.EventCode;

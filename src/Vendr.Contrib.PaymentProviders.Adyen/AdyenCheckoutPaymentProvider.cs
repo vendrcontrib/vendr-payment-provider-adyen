@@ -131,9 +131,6 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     adyenEvent.Success == true &&
                     adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
                 {
-                    //var hmacValidator = new Adyen.Util.HmacValidator();
-                    //var encrypted = hmacValidator.CalculateHmac(data, key);
-
                     var amount = adyenEvent.Amount.Value ?? 0;
 
                     var config = GetConfig(settings);
