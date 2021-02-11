@@ -69,7 +69,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
         protected Adyen.Model.Notification.NotificationRequestItem GetWebhookAdyenEvent(HttpRequestBase request, AdyenSettingsBase settings)
         {
-            string hmacKey = "";
+            string hmacKey = settings.HmacKey;
 
             Adyen.Model.Notification.NotificationRequestItem adyenEvent = null;
 
@@ -91,29 +91,32 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         var handler = new Adyen.Notification.NotificationHandler();
                         var notification = handler.HandleNotificationRequest(json);
 
-                        var hmacValidator = new Adyen.Util.HmacValidator();
-
-                        bool? liveMode = notification.Live.TryParse<bool>();
-
-                        // Check live mode from notification is opposite of test mode setting.
-                        if (liveMode.HasValue && liveMode.Value != settings.TestMode)
+                        if (notification != null)
                         {
-                            var notificationItem = notification.NotificationItemContainers[0].NotificationItem;
+                            var hmacValidator = new Adyen.Util.HmacValidator();
 
-                            // Verify "hmacSignature" in AdditionalData property
-                            if (hmacValidator.IsValidHmac(notificationItem, hmacKey))
+                            bool? liveMode = notification.Live.TryParse<bool>();
+
+                            // Check live mode from notification is opposite of test mode setting.
+                            if (liveMode.HasValue && liveMode.Value != settings.TestMode)
                             {
-                                string eventCode = notificationItem.EventCode;
-                                // Process the notification based on the eventCode
+                                var notificationItem = notification.NotificationItemContainers[0].NotificationItem;
 
-                                adyenEvent = notificationItem;
+                                // Verify "hmacSignature" in AdditionalData property
+                                if (hmacValidator.IsValidHmac(notificationItem, hmacKey))
+                                {
+                                    string eventCode = notificationItem.EventCode;
+                                    // Process the notification based on the eventCode
 
-                                HttpContext.Current.Items["Vendr_AdyenEvent"] = adyenEvent;
-                            }
-                            else
-                            {
-                                // Non valid NotificationRequest
-                                Vendr.Log.Warn<AdyenPaymentProviderBase<TSettings>>($"Failed verifying HMAC key for {notificationItem.PspReference}.");
+                                    adyenEvent = notificationItem;
+
+                                    HttpContext.Current.Items["Vendr_AdyenEvent"] = adyenEvent;
+                                }
+                                else
+                                {
+                                    // Non valid NotificationRequest
+                                    Vendr.Log.Warn<AdyenPaymentProviderBase<TSettings>>($"Failed verifying HMAC key for {notificationItem.PspReference}.");
+                                }
                             }
                         }
                     }
@@ -127,18 +130,21 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             return adyenEvent;
         }
 
-        protected Adyen.Config GetConfig(AdyenSettingsBase settings)
+        protected Adyen.Client GetClient(AdyenSettingsBase settings)
         {
             var config = new Adyen.Config
             {
                 MerchantAccount = settings.MerchantAccount,
                 XApiKey = settings.ApiKey,
-                Environment = settings.TestMode 
+                Environment = settings.TestMode
                     ? Adyen.Model.Enum.Environment.Test
                     : Adyen.Model.Enum.Environment.Live
             };
 
-            return config;
+            var client = new Adyen.Client(config);
+            client.SetEnvironment(config.Environment);
+
+            return client;
         }
 
         protected string GetTransactionId(Adyen.Model.Modification.ModificationResult result)
