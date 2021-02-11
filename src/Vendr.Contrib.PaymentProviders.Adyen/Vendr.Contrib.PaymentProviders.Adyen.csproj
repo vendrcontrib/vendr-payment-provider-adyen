@@ -128,6 +128,7 @@
   <ItemGroup>
     <Compile Include="AdyenPaymentProviderBase.cs" />
     <Compile Include="AdyenSettingsBase.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="AdyenCheckoutPaymentProvider.cs" />
     <Compile Include="AdyenCheckoutSettings.cs" />
