@@ -140,10 +140,6 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
                     var amount = adyenEvent.Amount.Value ?? 0;
 
-                    var paymentStatus = adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture
-                        ? PaymentStatus.Captured
-                        : PaymentStatus.Authorized;
-
                     // PspReference = Unique identifier for the payment
                     var pspReference = adyenEvent.PspReference;
 
@@ -180,7 +176,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                                 {
                                     TransactionId = pspReference,
                                     AmountAuthorized = AmountFromMinorUnits(amount),
-                                    PaymentStatus = paymentStatus
+                                    PaymentStatus = GetPaymentStatus(adyenEvent)
                                 }
                             };
                         }
@@ -205,7 +201,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                                 {
                                     TransactionId = pspReference,
                                     AmountAuthorized = AmountFromMinorUnits(amount),
-                                    PaymentStatus = paymentStatus
+                                    PaymentStatus = GetPaymentStatus(adyenEvent)
                                 }
                             };
                         }
