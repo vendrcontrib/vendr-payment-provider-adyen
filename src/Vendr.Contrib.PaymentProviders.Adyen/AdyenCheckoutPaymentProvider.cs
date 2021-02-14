@@ -243,14 +243,18 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     //Reference = "" (optional)
                 });
 
-                return new ApiResult()
+                if (result.Response == Adyen.Model.Enum.ResponseEnum.CancelReceived ||
+                    result.Response == Adyen.Model.Enum.ResponseEnum.CancelOrRefundReceived)
                 {
-                    TransactionInfo = new TransactionInfoUpdate()
+                    return new ApiResult()
                     {
-                        TransactionId = GetTransactionId(result),
-                        PaymentStatus = GetPaymentStatus(result)
-                    }
-                };
+                        TransactionInfo = new TransactionInfoUpdate()
+                        {
+                            TransactionId = GetTransactionId(result),
+                            PaymentStatus = GetPaymentStatus(result)
+                        }
+                    };
+                }
             }
             catch (Exception ex)
             {
@@ -288,14 +292,17 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     //Reference = "" (optional)
                 });
 
-                return new ApiResult()
+                if (result.Response == Adyen.Model.Enum.ResponseEnum.CaptureReceived)
                 {
-                    TransactionInfo = new TransactionInfoUpdate()
+                    return new ApiResult()
                     {
-                        TransactionId = GetTransactionId(result),
-                        PaymentStatus = GetPaymentStatus(result)
-                    }
-                };
+                        TransactionInfo = new TransactionInfoUpdate()
+                        {
+                            TransactionId = GetTransactionId(result),
+                            PaymentStatus = GetPaymentStatus(result)
+                        }
+                    };
+                }
             }
             catch (Exception ex)
             {
@@ -312,6 +319,12 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             var currency = Vendr.Services.CurrencyService.GetCurrency(order.CurrencyId);
             var currencyCode = currency.Code.ToUpperInvariant();
 
+            // Ensure currency has valid ISO 4217 code
+            if (!Iso4217.CurrencyCodes.ContainsKey(currencyCode))
+            {
+                throw new Exception("Currency must be a valid ISO 4217 currency code: " + currency.Name);
+            }
+
             var orderAmount = AmountToMinorUnits(order.TransactionAmount.Value);
 
             try
@@ -327,14 +340,18 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     //Reference = "" (optional)
                 });
 
-                return new ApiResult()
+                if (result.Response == Adyen.Model.Enum.ResponseEnum.CancelReceived ||
+                    result.Response == Adyen.Model.Enum.ResponseEnum.CancelOrRefundReceived)
                 {
-                    TransactionInfo = new TransactionInfoUpdate()
+                    return new ApiResult()
                     {
-                        TransactionId = GetTransactionId(result),
-                        PaymentStatus = GetPaymentStatus(result)
-                    }
-                };
+                        TransactionInfo = new TransactionInfoUpdate()
+                        {
+                            TransactionId = GetTransactionId(result),
+                            PaymentStatus = GetPaymentStatus(result)
+                        }
+                    };
+                }
             }
             catch (Exception ex)
             {
