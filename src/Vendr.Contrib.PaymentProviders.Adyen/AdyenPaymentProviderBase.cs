@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Security.Authentication;
+using System.Text;
 using System.Web;
 using Vendr.Core;
 using Vendr.Core.Models;
@@ -189,5 +191,32 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             return PaymentStatus.Initialized;
         }
+
+        protected void AuthenticateUser(string credentials, AdyenSettingsBase settings)
+        {
+            try
+            {
+                var encoding = Encoding.GetEncoding("ISO-8859-1");
+                var bytes = Encoding.ASCII.GetBytes(Base64Decode(credentials));
+                credentials = encoding.GetString(bytes);
+
+                int separator = credentials.IndexOf(':');
+                string username = credentials.Substring(0, separator);
+                string password = credentials.Substring(separator + 1);
+
+                bool validUser = username == settings.NotificationUsername && password == settings.NotificationPassword;
+                if (!validUser)
+                {
+                    // Invalid username or password.
+                    throw new AuthenticationException("Invalid username or password");
+                }
+            }
+            catch (FormatException ex)
+            {
+                // Credentials were not formatted correctly.
+                throw ex;
+            }
+        }
+
     }
 }
