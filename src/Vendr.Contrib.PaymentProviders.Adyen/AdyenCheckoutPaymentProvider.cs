@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Web;
 using System.Web.Mvc;
 using Vendr.Core;
@@ -136,7 +137,20 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 {
                     // If webhook notification has been configurated with Basic Auth (username and password), 
                     // we need to verify this in header. Should this be handled in "GetWebhookAdyenEvent"?
-                    var auth = request.Headers["Authorization"];
+                    var authHeader = request.Headers["Authorization"];
+                    if (authHeader != null)
+                    {
+                        var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
+
+                        // https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/basic-authentication
+
+                        // RFC 2617 sec 1.2, "scheme" name is case-insensitive
+                        if (authHeaderVal.Scheme.Equals("basic", StringComparison.OrdinalIgnoreCase) &&
+                            authHeaderVal.Parameter != null)
+                        {
+                            AuthenticateUser(authHeaderVal.Parameter, settings);
+                        }
+                    }
 
                     var amount = adyenEvent.Amount.Value ?? 0;
 
