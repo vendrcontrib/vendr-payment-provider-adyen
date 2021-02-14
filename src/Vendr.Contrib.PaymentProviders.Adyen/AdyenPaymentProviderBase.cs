@@ -156,6 +156,23 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             return result.PspReference;
         }
 
+        protected PaymentStatus GetPaymentStatus(Adyen.Model.Notification.NotificationRequestItem notification)
+        {
+            if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodePending)
+                return PaymentStatus.PendingExternalSystem;
+
+            if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancellation)
+                return PaymentStatus.Cancelled;
+
+            if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture)
+                return PaymentStatus.Captured;
+
+            if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
+                return PaymentStatus.Authorized;
+
+            return PaymentStatus.Initialized;
+        }
+
         protected PaymentStatus GetPaymentStatus(Adyen.Model.Modification.ModificationResult result)
         {
             if (result.Response == Adyen.Model.Enum.ResponseEnum.RefundReceived)
