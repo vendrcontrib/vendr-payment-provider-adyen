@@ -116,10 +116,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 MetaData = new Dictionary<string, string>
                 {
                     { "adyenPaymentLinkId", result.Id },
-                    { "adyenPspReference", result.Reference },
-                    { "adyenCancelUrl", cancelUrl },
-                    { "adyenContinueUrl", continueUrl },
-                    { "adyenErrorUrl", cancelUrl }
+                    { "adyenPspReference", result.Reference }
                 }
             };
         }
