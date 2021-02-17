@@ -78,7 +78,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         reference: order.OrderNumber
                     )
                 {
-                    ReturnUrl = callbackUrl,
+                    ReturnUrl = continueUrl,
                     //MerchantOrderReference = order.GetOrderReference(),
                     ShopperEmail = order.CustomerInfo.Email,
                     ShopperReference = order.CustomerInfo.CustomerReference,
@@ -112,7 +112,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             
             return new PaymentFormResult()
             {
-                Form = new PaymentForm(result.Url, FormMethod.Post),
+                Form = new PaymentForm(result.Url, FormMethod.Get),
                 MetaData = new Dictionary<string, string>
                 {
                     { "adyenPaymentLinkId", result.Id },
@@ -170,54 +170,30 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
                     if (adyenEvent.Success)
                     {
-                        var continueUrl = order.Properties["adyenContinueUrl"]?.Value;
-
                         if (adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation ||
                         adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodePending ||
                         adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture)
                         {
-                            var successResponse = new HttpResponseMessage(HttpStatusCode.Redirect)
+                            return CallbackResult.Ok(new TransactionInfo
                             {
-                                Content = new StringContent("")
-                            };
-                            successResponse.Headers.Location = new Uri(continueUrl);
-
-                            return new CallbackResult
-                            {
-                                HttpResponse = successResponse,
-                                MetaData = metaData,
-                                TransactionInfo = new TransactionInfo
-                                {
-                                    TransactionId = pspReference,
-                                    AmountAuthorized = AmountFromMinorUnits(amount),
-                                    PaymentStatus = GetPaymentStatus(adyenEvent)
-                                }
-                            };
+                                TransactionId = pspReference,
+                                AmountAuthorized = AmountFromMinorUnits(amount),
+                                PaymentStatus = GetPaymentStatus(adyenEvent)
+                            },
+                            metaData);
                         }
                     }
                     else
                     {
-                        var cancelUrl = order.Properties["adyenCancelUrl"]?.Value;
-
                         if (adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancellation)
                         {
-                            var successResponse = new HttpResponseMessage(HttpStatusCode.Redirect)
+                            return CallbackResult.Ok(new TransactionInfo
                             {
-                                Content = new StringContent("")
-                            };
-                            successResponse.Headers.Location = new Uri(cancelUrl);
-
-                            return new CallbackResult
-                            {
-                                HttpResponse = successResponse,
-                                MetaData = metaData,
-                                TransactionInfo = new TransactionInfo
-                                {
-                                    TransactionId = pspReference,
-                                    AmountAuthorized = AmountFromMinorUnits(amount),
-                                    PaymentStatus = GetPaymentStatus(adyenEvent)
-                                }
-                            };
+                                TransactionId = pspReference,
+                                AmountAuthorized = AmountFromMinorUnits(amount),
+                                PaymentStatus = GetPaymentStatus(adyenEvent)
+                            },
+                            metaData);
                         }
                     }
                 }
@@ -227,18 +203,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 Vendr.Log.Error<AdyenCheckoutPaymentProvider>(ex, "Adyen - ProcessCallback");
             }
 
-            var errorUrl = order.Properties["adyenErrorUrl"]?.Value;
-
-            var errorResponse = new HttpResponseMessage(HttpStatusCode.Redirect)
-            {
-                Content = new StringContent("")
-            };
-            errorResponse.Headers.Location = new Uri(errorUrl);
-
-            return new CallbackResult
-            {
-                HttpResponse = errorResponse
-            };
+            return CallbackResult.BadRequest();
         }
 
         public override ApiResult CancelPayment(OrderReadOnly order, AdyenCheckoutSettings settings)
