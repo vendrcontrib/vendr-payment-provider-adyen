@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Web;
 using System.Web.Mvc;
 using Vendr.Core;
@@ -146,23 +145,6 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 var adyenEvent = GetWebhookAdyenEvent(request, settings);
                 if (adyenEvent != null)
                 {
-                    // If webhook notification has been configurated with Basic Auth (username and password), 
-                    // we need to verify this in header. Should this be handled in "GetWebhookAdyenEvent"?
-                    var authHeader = request.Headers["Authorization"];
-                    if (authHeader != null)
-                    {
-                        var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
-
-                        // https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/basic-authentication
-
-                        // RFC 2617 sec 1.2, "scheme" name is case-insensitive
-                        if (authHeaderVal.Scheme.Equals("basic", StringComparison.OrdinalIgnoreCase) &&
-                            authHeaderVal.Parameter != null)
-                        {
-                            AuthenticateUser(authHeaderVal.Parameter, settings);
-                        }
-                    }
-
                     var amount = adyenEvent.Amount.Value ?? 0;
 
                     // PspReference = Unique identifier for the payment
@@ -182,8 +164,8 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     if (adyenEvent.Success)
                     {
                         if (adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation ||
-                        adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodePending ||
-                        adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture)
+                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodePending ||
+                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture)
                         {
                             return CallbackResult.Ok(new TransactionInfo
                             {
