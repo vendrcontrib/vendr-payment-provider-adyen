@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Security.Authentication;
 using System.Text;
 using System.Web;
@@ -107,12 +108,32 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                                 // Verify "hmacSignature" in AdditionalData property
                                 if (hmacValidator.IsValidHmac(notificationItem, hmacKey))
                                 {
-                                    string eventCode = notificationItem.EventCode;
                                     // Process the notification based on the eventCode
+                                    string eventCode = notificationItem.EventCode;
+
+                                    // If webhook notification has been configurated with Basic Auth (username and password), 
+                                    // we need to verify this in header.
+                                    var authHeader = request.Headers["Authorization"];
+                                    if (authHeader != null)
+                                    {
+                                        var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
+
+                                        // https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/basic-authentication
+
+                                        // RFC 2617 sec 1.2, "scheme" name is case-insensitive
+                                        if (authHeaderVal.Scheme.Equals("basic", StringComparison.OrdinalIgnoreCase) &&
+                                            authHeaderVal.Parameter != null)
+                                        {
+                                            AuthenticateUser(authHeaderVal.Parameter, settings);
+                                        }
+                                    }
 
                                     adyenEvent = notificationItem;
 
                                     HttpContext.Current.Items["Vendr_AdyenEvent"] = adyenEvent;
+
+                                    // Accept notifications: https://docs.adyen.com/development-resources/webhooks#accept-notifications
+                                    HttpContext.Current.Response.Write("[accepted]");
                                 }
                                 else
                                 {
