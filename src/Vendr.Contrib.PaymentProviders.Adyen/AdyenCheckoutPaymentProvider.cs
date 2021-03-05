@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Web;
 using System.Web.Mvc;
@@ -50,10 +48,19 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
             var orderAmount = AmountToMinorUnits(order.TransactionAmount.Value);
 
-            var paymentMethods = settings.PaymentMethods?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+            var allowedPaymentMethods = settings.AllowedPaymentMethods?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                    .Where(x => !string.IsNullOrWhiteSpace(x))
                    .Select(s => s.Trim())
                    .ToList();
+
+            var blockedPaymentMethods = settings.BlockedPaymentMethods?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                   .Where(x => !string.IsNullOrWhiteSpace(x))
+                   .Select(s => s.Trim())
+                   .ToList();
+
+            var billingCountry = order.PaymentInfo.CountryId.HasValue
+                    ? Vendr.Services.CountryService.GetCountry(order.PaymentInfo.CountryId.Value)
+                    : null;
 
             var metadata = new Dictionary<string, string>
             {
@@ -87,12 +94,19 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         firstName: order.CustomerInfo.FirstName,
                         lastName: order.CustomerInfo.LastName
                     ),
+                    ShopperLocale = settings.Locale,
+                    CountryCode = billingCountry?.Code,
                     Metadata = metadata
                 };
 
-                if (paymentMethods?.Count > 0)
+                if (allowedPaymentMethods?.Count > 0)
                 {
-                    paymentRequest.AllowedPaymentMethods = paymentMethods;
+                    paymentRequest.AllowedPaymentMethods = allowedPaymentMethods;
+                }
+
+                if (blockedPaymentMethods?.Count > 0)
+                {
+                    paymentRequest.BlockedPaymentMethods = blockedPaymentMethods;
                 }
 
                 var checkout = new Adyen.Service.Checkout(client);
