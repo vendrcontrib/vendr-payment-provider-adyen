@@ -102,12 +102,11 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         {
                             foreach (var notificationRequestItemContainer in notification.NotificationItemContainers)
                             {
-                                // Accept notifications: https://docs.adyen.com/development-resources/webhooks#accept-notifications
-                                HttpContext.Current.Response.Write("[accepted]");
-
                                 var notificationItem = notificationRequestItemContainer.NotificationItem;
                                 if (hmacValidator.IsValidHmac(notificationItem, hmacKey))
                                 {
+                                    SendNotificationReceivedMessage();
+
                                     // Process the notification based on the eventCode
                                     string eventCode = notificationItem.EventCode;
 
@@ -236,5 +235,10 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             }
         }
 
+        private void SendNotificationReceivedMessage()
+        {
+            // Accept notifications: https://docs.adyen.com/development-resources/webhooks#accept-notifications
+            HttpContext.Current.Response.Write("[accepted]");
+        }
     }
 }
