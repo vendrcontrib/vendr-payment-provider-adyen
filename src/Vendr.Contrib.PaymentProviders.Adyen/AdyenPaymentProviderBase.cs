@@ -186,7 +186,12 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture)
                 return PaymentStatus.Captured;
 
-            if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation)
+            if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeRefund ||
+                notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeRefundWithData)
+                return PaymentStatus.Refunded;
+
+            if (notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation ||
+                notification.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisationAdjustment)
                 return PaymentStatus.Authorized;
 
             return PaymentStatus.Initialized;
