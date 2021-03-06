@@ -91,21 +91,21 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     {
                         var json = reader.ReadToEnd();
 
+                        var hmacValidator = new Adyen.Util.HmacValidator();
                         var handler = new Adyen.Notification.NotificationHandler();
                         var notification = handler.HandleNotificationRequest(json);
 
-                        if (notification != null)
+                        bool? liveMode = notification.Live.TryParse<bool>();
+
+                        // Check live mode from notification is opposite of test mode setting.
+                        if (liveMode.HasValue && liveMode.Value != settings.TestMode)
                         {
-                            var hmacValidator = new Adyen.Util.HmacValidator();
-
-                            bool? liveMode = notification.Live.TryParse<bool>();
-
-                            // Check live mode from notification is opposite of test mode setting.
-                            if (liveMode.HasValue && liveMode.Value != settings.TestMode)
+                            foreach (var notificationRequestItemContainer in notification.NotificationItemContainers)
                             {
-                                var notificationItem = notification.NotificationItemContainers[0].NotificationItem;
+                                // Accept notifications: https://docs.adyen.com/development-resources/webhooks#accept-notifications
+                                HttpContext.Current.Response.Write("[accepted]");
 
-                                // Verify "hmacSignature" in AdditionalData property
+                                var notificationItem = notificationRequestItemContainer.NotificationItem;
                                 if (hmacValidator.IsValidHmac(notificationItem, hmacKey))
                                 {
                                     // Process the notification based on the eventCode
@@ -131,9 +131,6 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                                     adyenEvent = notificationItem;
 
                                     HttpContext.Current.Items["Vendr_AdyenEvent"] = adyenEvent;
-
-                                    // Accept notifications: https://docs.adyen.com/development-resources/webhooks#accept-notifications
-                                    HttpContext.Current.Response.Write("[accepted]");
                                 }
                                 else
                                 {
