@@ -85,7 +85,6 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     )
                 {
                     ReturnUrl = continueUrl,
-                    //MerchantOrderReference = order.GetOrderReference(),
                     ShopperEmail = order.CustomerInfo.Email,
                     ShopperReference = order.CustomerInfo.CustomerReference,
                     ShopperName = new Adyen.Model.Checkout.Name
@@ -200,7 +199,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 var result = modification.Cancel(new Adyen.Model.Modification.CancelRequest
                 {
                     MerchantAccount = client.Config.MerchantAccount,
-                    OriginalReference = order.TransactionInfo.TransactionId
+                    OriginalReference = order.TransactionInfo.TransactionId,
                     //Reference = "" (optional)
                 });
 
