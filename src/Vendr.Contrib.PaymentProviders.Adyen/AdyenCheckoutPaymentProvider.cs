@@ -167,8 +167,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                             adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodePending ||
                             adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture ||
                             adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeRefund ||
-                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancellation ||
-                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancelOrRefund)
+                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancellation)
                         {
                             return CallbackResult.Ok(new TransactionInfo
                             {
