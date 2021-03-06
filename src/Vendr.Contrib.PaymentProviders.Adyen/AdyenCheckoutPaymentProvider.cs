@@ -165,20 +165,10 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                     {
                         if (adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeAuthorisation ||
                             adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodePending ||
-                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture)
-                        {
-                            return CallbackResult.Ok(new TransactionInfo
-                            {
-                                TransactionId = pspReference,
-                                AmountAuthorized = AmountFromMinorUnits(amount),
-                                PaymentStatus = GetPaymentStatus(adyenEvent)
-                            },
-                            metaData);
-                        }
-                    }
-                    else
-                    {
-                        if (adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancellation)
+                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCapture ||
+                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeRefund ||
+                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancellation ||
+                            adyenEvent.EventCode == Adyen.Model.Notification.NotificationRequestConst.EventCodeCancelOrRefund)
                         {
                             return CallbackResult.Ok(new TransactionInfo
                             {
