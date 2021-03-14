@@ -7,6 +7,7 @@ using System.Text;
 using System.Web;
 using Vendr.Core;
 using Vendr.Core.Models;
+using Vendr.Core.Web;
 using Vendr.Core.Web.Api;
 using Vendr.Core.Web.PaymentProviders;
 
@@ -58,6 +59,19 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                         if (additionalData.TryGetValue(Constants.AdditionalData.OrderReference, out string orderReference))
                         {
                             return OrderReference.Parse(orderReference);
+                        }
+                        else
+                        {
+                            // Currently CANCELLATION notification doesn't include custom meta data in AdditionalData,
+                            // so we use reference from notification data to lookup order.
+                            if (!string.IsNullOrEmpty(adyenEvent.MerchantReference))
+                            {
+                                var order = Vendr.Services.OrderService.GetOrder(Guid.Empty, adyenEvent.MerchantReference);
+                                if (order != null)
+                                {
+                                    return order.GenerateOrderReference();
+                                }
+                            }
                         }
                     }
                 }
