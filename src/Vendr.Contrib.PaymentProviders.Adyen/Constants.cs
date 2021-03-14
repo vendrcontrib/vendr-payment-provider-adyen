@@ -8,6 +8,7 @@
         {
             // Additional constant for "paymentLinkId"
             public const string PaymentLinkId = "paymentLinkId";
+            public const string MerchantOrderReference = "merchantOrderReference";
 
             // Custom constants for metadata
             public const string OrderReference = "metadata.orderReference";
