@@ -66,7 +66,19 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                             // so we use reference from notification data to lookup order.
                             if (!string.IsNullOrEmpty(adyenEvent.MerchantReference))
                             {
-                                var order = Vendr.Services.OrderService.GetOrder(Guid.Empty, adyenEvent.MerchantReference);
+                                // Try find order in stores
+                                OrderReadOnly order = null;
+
+                                var stores = Vendr.Services.StoreService.GetStores();
+
+                                foreach (var store in stores)
+                                {
+                                    if (order != null)
+                                        continue;
+
+                                    order = Vendr.Services.OrderService.GetOrder(store.Id, adyenEvent.MerchantReference);
+                                }
+
                                 if (order != null)
                                 {
                                     return order.GenerateOrderReference();
