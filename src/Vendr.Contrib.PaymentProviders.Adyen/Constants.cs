@@ -6,7 +6,7 @@
         
         public class AdditionalData
         {
-            // Additional constant for "paymentLinkId"
+            // Additional constants not included in library
             public const string PaymentLinkId = "paymentLinkId";
             public const string MerchantOrderReference = "merchantOrderReference";
 
