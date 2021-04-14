@@ -13,7 +13,7 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 {
     using Adyen = global::Adyen;
 
-    [PaymentProvider("adyen-checkout", "Adyen Checkout", "Adyen payment provider for one time payments", Icon = "icon-invoice")]
+    [PaymentProvider("adyen-checkout", "Adyen Checkout", "Adyen payment provider for one time payments")]
     public class AdyenCheckoutPaymentProvider : AdyenPaymentProviderBase<AdyenCheckoutSettings>
     {
         public AdyenCheckoutPaymentProvider(VendrContext vendr)
