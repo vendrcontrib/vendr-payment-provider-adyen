@@ -9,6 +9,7 @@
 			<BinFiles Include="$(SourceDir)\Vendr.*\bin\$(BuildConfiguration)\$(ProjectName).dll" />
             <BinFiles Include="$(SourceDir)\Vendr.*\bin\$(BuildConfiguration)\$(ProjectName).pdb" />
             <BinFiles Include="$(SourceDir)\Vendr.*\bin\$(BuildConfiguration)\$(ProjectName).xml" />
+            <BinFiles Include="$(SourceDir)\Vendr.*\bin\$(BuildConfiguration)\Adyen.dll" />
             <!-- BEGIN DLL DEPENDENCIES-->
             <!-- <BinFiles Include="$(SourceDir)\Vendr.*\bin\$(BuildConfiguration)\Your.Dependency.dll" /> -->
             <!-- END DLL DEPENDENCIES-->
