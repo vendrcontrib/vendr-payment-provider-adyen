@@ -1,54 +1,60 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Authentication;
 using System.Text;
-using System.Web;
-using Vendr.Core;
+using System.Threading.Tasks;
+using Vendr.Common.Logging;
+using Vendr.Core.Api;
 using Vendr.Core.Models;
-using Vendr.Core.Web;
-using Vendr.Core.Web.Api;
-using Vendr.Core.Web.PaymentProviders;
+using Vendr.Core.PaymentProviders;
+using Vendr.Extensions;
 
 namespace Vendr.Contrib.PaymentProviders.Adyen
 {
     using Adyen = global::Adyen;
 
-    public abstract class AdyenPaymentProviderBase<TSettings> : PaymentProviderBase<TSettings>
+    public abstract class AdyenPaymentProviderBase<TSelf, TSettings> : PaymentProviderBase<TSettings>
+        where TSelf : AdyenPaymentProviderBase<TSelf, TSettings>
         where TSettings : AdyenSettingsBase, new()
     {
-        public AdyenPaymentProviderBase(VendrContext vendr)
+        protected readonly ILogger<TSelf> _logger;
+
+        public AdyenPaymentProviderBase(VendrContext vendr,
+            ILogger<TSelf> logger)
             : base(vendr)
-        { }
-
-        public override string GetCancelUrl(OrderReadOnly order, TSettings settings)
         {
-            settings.MustNotBeNull("settings");
-            settings.CancelUrl.MustNotBeNull("settings.CancelUrl");
-
-            return settings.CancelUrl;
+            _logger = logger;
         }
 
-        public override string GetContinueUrl(OrderReadOnly order, TSettings settings)
+        public override string GetCancelUrl(PaymentProviderContext<TSettings> ctx)
         {
-            settings.MustNotBeNull("settings");
-            settings.ContinueUrl.MustNotBeNull("settings.ContinueUrl");
+            ctx.Settings.MustNotBeNull("settings");
+            ctx.Settings.CancelUrl.MustNotBeNull("settings.CancelUrl");
 
-            return settings.ContinueUrl;
+            return ctx.Settings.CancelUrl;
+        }
+        public override string GetContinueUrl(PaymentProviderContext<TSettings> ctx)
+        {
+            ctx.Settings.MustNotBeNull("settings");
+            ctx.Settings.ContinueUrl.MustNotBeNull("settings.ContinueUrl");
+
+            return ctx.Settings.ContinueUrl;
         }
 
-        public override string GetErrorUrl(OrderReadOnly order, TSettings settings)
+        public override string GetErrorUrl(PaymentProviderContext<TSettings> ctx)
         {
-            settings.MustNotBeNull("settings");
-            settings.ErrorUrl.MustNotBeNull("settings.ErrorUrl");
+            ctx.Settings.MustNotBeNull("settings");
+            ctx.Settings.ErrorUrl.MustNotBeNull("settings.ErrorUrl");
 
-            return settings.ErrorUrl;
+            return ctx.Settings.ErrorUrl;
         }
 
-        public override OrderReference GetOrderReference(HttpRequestBase request, TSettings settings)
+        public override async Task<OrderReference> GetOrderReferenceAsync(PaymentProviderContext<TSettings> ctx)
         {
-            var adyenEvent = GetWebhookAdyenEvent(request, settings);
+            var adyenEvent = await GetWebhookAdyenEventAsync(ctx);
             if (adyenEvent != null)
             {
                 try
@@ -99,90 +105,95 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
                 }
                 catch (Exception ex)
                 {
-                    Vendr.Log.Error<AdyenCheckoutPaymentProvider>(ex, "Adyen - GetOrderReference");
+                    _logger.Error(ex, "Adyen - GetOrderReference");
                 }
             }
 
-            return base.GetOrderReference(request, settings);
+            return await base.GetOrderReferenceAsync(ctx);
         }
 
-        protected Adyen.Model.Notification.NotificationRequestItem GetWebhookAdyenEvent(HttpRequestBase request, AdyenSettingsBase settings)
+        protected async Task<Adyen.Model.Notification.NotificationRequestItem> GetWebhookAdyenEventAsync(PaymentProviderContext<TSettings> ctx)
         {
-            string hmacKey = settings.HmacKey;
+            Adyen.Model.Notification.NotificationRequestItem adyenWebhookEvent = null;
 
-            Adyen.Model.Notification.NotificationRequestItem adyenEvent = null;
-
-            if (HttpContext.Current.Items["Vendr_AdyenEvent"] != null)
+            if (ctx.AdditionalData.ContainsKey("Vendr_AdyenWebhookEvent"))
             {
-                adyenEvent = (Adyen.Model.Notification.NotificationRequestItem)HttpContext.Current.Items["Vendr_AdyenEvent"];
+                adyenWebhookEvent = (Adyen.Model.Notification.NotificationRequestItem)ctx.AdditionalData["Vendr_AdyenWebhookEvent"];
             }
             else
             {
-                try
+                adyenWebhookEvent = await ParseWebhookEventAsync(ctx.Request, ctx.Settings);
+
+                ctx.AdditionalData.Add("Vendr_AdyenWebhookEvent", adyenWebhookEvent);
+            }
+
+            return adyenWebhookEvent;
+        }
+
+        private async Task<Adyen.Model.Notification.NotificationRequestItem> ParseWebhookEventAsync(HttpRequestMessage request, TSettings settings)
+        {
+            Adyen.Model.Notification.NotificationRequestItem adyenWebhookEvent = null;
+
+            var headers = request.Content.Headers;
+
+            using (var stream = await request.Content.ReadAsStreamAsync())
+            {
+                if (stream.CanSeek)
+                    stream.Seek(0, SeekOrigin.Begin);
+
+                using (var reader = new StreamReader(stream))
                 {
-                    if (request.InputStream.CanSeek)
-                        request.InputStream.Seek(0, SeekOrigin.Begin);
+                    var json = await reader.ReadToEndAsync();
 
-                    using (var reader = new StreamReader(request.InputStream))
+                    var hmacValidator = new Adyen.Util.HmacValidator();
+                    var handler = new Adyen.Notification.NotificationHandler();
+                    var notification = handler.HandleNotificationRequest(json);
+
+                    bool? liveMode = notification.Live.TryParse<bool>();
+
+                    // Check live mode from notification is opposite of test mode setting.
+                    if (liveMode.HasValue && liveMode.Value != settings.TestMode)
                     {
-                        var json = reader.ReadToEnd();
-
-                        var hmacValidator = new Adyen.Util.HmacValidator();
-                        var handler = new Adyen.Notification.NotificationHandler();
-                        var notification = handler.HandleNotificationRequest(json);
-
-                        bool? liveMode = notification.Live.TryParse<bool>();
-
-                        // Check live mode from notification is opposite of test mode setting.
-                        if (liveMode.HasValue && liveMode.Value != settings.TestMode)
+                        foreach (var notificationRequestItemContainer in notification.NotificationItemContainers)
                         {
-                            foreach (var notificationRequestItemContainer in notification.NotificationItemContainers)
+                            var notificationItem = notificationRequestItemContainer.NotificationItem;
+                            if (hmacValidator.IsValidHmac(notificationItem, settings.HmacKey))
                             {
-                                var notificationItem = notificationRequestItemContainer.NotificationItem;
-                                if (hmacValidator.IsValidHmac(notificationItem, hmacKey))
+                                SendNotificationReceivedMessage();
+
+                                // Process the notification based on the eventCode
+                                string eventCode = notificationItem.EventCode;
+
+                                // If webhook notification has been configurated with Basic Auth (username and password), 
+                                // we need to verify this in header.
+                                var authHeader = headers.GetValues("Authorization").FirstOrDefault();
+                                if (authHeader != null)
                                 {
-                                    SendNotificationReceivedMessage();
+                                    var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
 
-                                    // Process the notification based on the eventCode
-                                    string eventCode = notificationItem.EventCode;
+                                    // https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/basic-authentication
 
-                                    // If webhook notification has been configurated with Basic Auth (username and password), 
-                                    // we need to verify this in header.
-                                    var authHeader = request.Headers["Authorization"];
-                                    if (authHeader != null)
+                                    // RFC 2617 sec 1.2, "scheme" name is case-insensitive
+                                    if (authHeaderVal.Scheme.Equals("basic", StringComparison.OrdinalIgnoreCase) &&
+                                        authHeaderVal.Parameter != null)
                                     {
-                                        var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
-
-                                        // https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/basic-authentication
-
-                                        // RFC 2617 sec 1.2, "scheme" name is case-insensitive
-                                        if (authHeaderVal.Scheme.Equals("basic", StringComparison.OrdinalIgnoreCase) &&
-                                            authHeaderVal.Parameter != null)
-                                        {
-                                            AuthenticateUser(authHeaderVal.Parameter, settings);
-                                        }
+                                        AuthenticateUser(authHeaderVal.Parameter, settings);
                                     }
-
-                                    adyenEvent = notificationItem;
-
-                                    HttpContext.Current.Items["Vendr_AdyenEvent"] = adyenEvent;
                                 }
-                                else
-                                {
-                                    // Non valid NotificationRequest
-                                    Vendr.Log.Warn<AdyenPaymentProviderBase<TSettings>>($"Failed verifying HMAC key for {notificationItem.PspReference}.");
-                                }
+
+                                adyenWebhookEvent = notificationItem;
+                            }
+                            else
+                            {
+                                // Non valid NotificationRequest
+                                _logger.Warn($"Failed verifying HMAC key for {notificationItem.PspReference}.");
                             }
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    Vendr.Log.Error<AdyenPaymentProviderBase<TSettings>>(ex, "Adyen - GetWebhookAdyenEvent");
-                }
             }
 
-            return adyenEvent;
+            return adyenWebhookEvent;
         }
 
         protected Adyen.Client GetClient(AdyenSettingsBase settings)
