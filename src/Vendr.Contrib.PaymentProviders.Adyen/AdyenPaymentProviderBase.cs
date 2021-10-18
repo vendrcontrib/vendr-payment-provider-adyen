@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Authentication;
@@ -287,10 +288,14 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
             }
         }
 
-        private void SendNotificationReceivedMessage()
+        private HttpResponseMessage SendNotificationReceivedMessage()
         {
             // Accept notifications: https://docs.adyen.com/development-resources/webhooks#accept-notifications
-            HttpContext.Current.Response.Write("[accepted]");
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("[accepted]") 
+            };
         }
     }
 }
