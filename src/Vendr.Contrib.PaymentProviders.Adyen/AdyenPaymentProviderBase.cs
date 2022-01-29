@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -167,18 +168,21 @@ namespace Vendr.Contrib.PaymentProviders.Adyen
 
                                 // If webhook notification has been configurated with Basic Auth (username and password), 
                                 // we need to verify this in header.
-                                var authHeader = headers.GetValues("Authorization").FirstOrDefault();
-                                if (authHeader != null)
+                                if (headers.TryGetValues("Authorization", out IEnumerable<string> headerValues))
                                 {
-                                    var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
-
-                                    // https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/basic-authentication
-
-                                    // RFC 2617 sec 1.2, "scheme" name is case-insensitive
-                                    if (authHeaderVal.Scheme.Equals("basic", StringComparison.OrdinalIgnoreCase) &&
-                                        authHeaderVal.Parameter != null)
+                                    var authHeader = headerValues.FirstOrDefault();
+                                    if (authHeader != null)
                                     {
-                                        AuthenticateUser(authHeaderVal.Parameter, settings);
+                                        var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
+
+                                        // https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/basic-authentication
+
+                                        // RFC 2617 sec 1.2, "scheme" name is case-insensitive
+                                        if (authHeaderVal.Scheme.Equals("basic", StringComparison.OrdinalIgnoreCase) &&
+                                            authHeaderVal.Parameter != null)
+                                        {
+                                            AuthenticateUser(authHeaderVal.Parameter, settings);
+                                        }
                                     }
                                 }
 
