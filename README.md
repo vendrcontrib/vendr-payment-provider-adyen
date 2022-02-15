@@ -1,3 +1,3 @@
-# Vendr Adyen Payment Provider
+﻿# Vendr Adyen Payment Provider
 
-Adyen Payment Provider for Vendr, the eCommerce package for Umbrao v8+
+Adyen Payment Provider for Vendr, the eCommerce package for Umbraco
